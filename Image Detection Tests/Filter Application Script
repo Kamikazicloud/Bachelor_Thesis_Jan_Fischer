@@ -1,0 +1,59 @@
+import numpy as np
+from PIL import Image
+
+def filter_png(input_path, output_path, intensity=4, wave_frequency=1.5, 
+                            subtle_brightness_intensity=3, subtle_color_intensity=2):
+    """
+    Applies a spatially varying color shift, along with barely visible 
+    brightness and secondary color fluctuations, saving as a lossless PNG.
+    """
+    try:
+        img = Image.open(input_path).convert('RGB')
+        arr = np.array(img, dtype=np.float32)
+    except FileNotFoundError:
+        print(f"Error: Could not find '{input_path}'.")
+        return
+
+    height, width, _ = arr.shape
+
+    x = np.arange(width)
+    y = np.arange(height)
+    xv, yv = np.meshgrid(x, y)
+
+    r_shift = np.sin(xv * wave_frequency) * intensity
+    b_shift = np.cos(yv * wave_frequency) * intensity
+    g_shift = np.sin((xv + yv) * (wave_frequency * 0.75)) * intensity
+
+    brightness_shift = np.sin(xv * 0.005) * np.cos(yv * 0.008) * subtle_brightness_intensity
+
+    micro_r = np.cos((xv - yv) * 0.012) * subtle_color_intensity
+    micro_g = np.sin((xv * yv) * 0.00001) * subtle_color_intensity
+    micro_b = np.sin((xv + yv * 2.5) * 0.009) * subtle_color_intensity
+
+    arr[:, :, 0] += r_shift
+    arr[:, :, 1] += g_shift
+    arr[:, :, 2] += b_shift
+
+    arr[:, :, 0] += brightness_shift
+    arr[:, :, 1] += brightness_shift
+    arr[:, :, 2] += brightness_shift
+
+    arr[:, :, 0] += micro_r
+    arr[:, :, 1] += micro_g
+    arr[:, :, 2] += micro_b
+
+    arr = np.clip(arr, 0, 255).astype(np.uint8)
+
+    out_img = Image.fromarray(arr)
+    out_img.save(output_path, 'PNG')
+    
+    print(f"Filters applied, saved to {output_path}.")
+
+filter_png(
+    "Gemini-4.png", 
+    "spatial_shift_output.png", 
+    intensity=5, 
+    wave_frequency=2.0,
+    subtle_brightness_intensity=3, 
+    subtle_color_intensity=2       
+)
