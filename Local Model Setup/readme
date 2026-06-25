@@ -1,0 +1,55 @@
+### Step 1: Environment Creation and Dependency Installation
+A dedicated Python environment is required to manage the specific dependencies for Stable Diffusion Forge and the Flux architecture.
+
+```bash
+# Create a new Conda environment with Python 3.10
+conda create -p /path/to/your/env python=3.10 -y
+conda activate /path/to/your/env
+
+# Clone the Stable Diffusion Forge repository
+git clone [https://github.com/lllyasviel/stable-diffusion-webui-forge.git](https://github.com/lllyasviel/stable-diffusion-webui-forge.git)
+cd stable-diffusion-webui-forge
+```
+
+### Step 2: Component Acquisition and Path Mapping
+Flux. 1-dev requires specific weights and encoders. These must be placed in the respective `models/` subdirectories to be recognized by the Forge backend.
+
+```bash
+# 1. Download the FP8 Model Weights (UNet)
+python -m huggingface_hub.commands.huggingface_cli download \
+  Kijai/flux-fp8 flux1-dev-fp8.safetensors \
+  --local-dir models/Stable-diffusion/ \
+  --local-dir-use-symlinks False
+
+# 2. Download Text Encoders
+python -m huggingface_hub.commands.huggingface_cli download \
+  comfyanonymous/flux_text_encoders clip_l.safetensors \
+  --local-dir models/text_encoder/
+
+python -m huggingface_hub.commands.huggingface_cli download \
+  comfyanonymous/flux_text_encoders t5xxl_fp8_e4m3fn.safetensors \
+  --local-dir models/text_encoder/
+
+# 3. Download the Flux VAE
+python -m huggingface_hub.commands.huggingface_cli download \
+  black-forest-labs/FLUX.1-dev ae.safetensors \
+  --local-dir models/VAE/
+
+# 4. Download LoRAs (For stylistic and forensic anomalies)
+python -m huggingface_hub.commands.huggingface_cli download \
+  XLabs-AI/flux-RealismLora flux_realism_v1.safetensors \
+  --local-dir models/Lora/
+
+python -m huggingface_hub.commands.huggingface_cli download \
+  ForCu/amateur-photography-v6-flux1-dev amateurphoto-v6.safetensors \
+  --local-dir models/Lora/
+```
+
+### Step 3: Execution and Memory Optimization
+To prevent CUDA Out-Of-Memory (OOM) errors, the server is launched with specific memory-management flags.
+
+```bash
+# Launch the server with low-VRAM optimizations
+python3 launch.py --listen --xformers --lowvram \
+  --cuda-malloc --skip-python-version-check
+```
